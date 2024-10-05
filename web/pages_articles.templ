@@ -1,0 +1,224 @@
+package web
+
+import (
+	"fmt"
+	"github.com/delaneyj/datastar"
+	"github.com/delaneyj/realworld-datastar/sql/zz"
+	"net/http"
+)
+
+type ArticleEditData struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Body        string `json:"body"`
+	NewTags     string `json:"tags"`
+}
+
+templ PageArticleUpsert(r *http.Request, u *zz.UserModel, data *ArticleEditData, tags ...*zz.TagModel) {
+	@Page(r, u) {
+		@articleEditor(r, data, tags...)
+	}
+}
+
+templ articleEditor(r *http.Request, data *ArticleEditData, tags ...*zz.TagModel) {
+	<div
+		id="editor"
+		class="editor-page"
+		data-store={ templ.JSONString(data) }
+	>
+		<div class="container page">
+			<div class="row">
+				<div class="col-md-10 offset-md-1 col-xs-12">
+					@errorMessages()
+					<form onSubmit="return false;">
+						<fieldset>
+							<fieldset class="form-group">
+								<input
+									type="text"
+									class="form-control form-control-lg"
+									placeholder="Article Title"
+									data-model="title"
+								/>
+							</fieldset>
+							<fieldset class="form-group">
+								<input
+									type="text"
+									class="form-control"
+									placeholder="What's this article about?"
+									data-model="description"
+								/>
+							</fieldset>
+							<fieldset class="form-group">
+								<textarea
+									class="form-control"
+									rows="8"
+									placeholder="Write your article (in markdown)"
+									data-model="body"
+								></textarea>
+							</fieldset>
+							<fieldset class="form-group">
+								<input
+									type="text"
+									class="form-control"
+									placeholder="Enter tags"
+									data-model="tags"
+								/>
+								@articleEditorTags(r, tags...)
+							</fieldset>
+							<button
+								class="btn btn-lg pull-xs-right btn-primary"
+								type="button"
+								data-on-click={ datastar.POST(r.URL.Path) }
+							>
+								Publish Article
+							</button>
+						</fieldset>
+					</form>
+				</div>
+			</div>
+		</div>
+	</div>
+}
+
+templ articleEditorTags(r *http.Request, tags ...*zz.TagModel) {
+	<div id="tags" class="tag-list">
+		for _, tag := range tags {
+			<button
+				class="tag-default tag-pill"
+				data-on-click={ datastar.DELETE("%s/tags/%d", r.URL.Path, tag.Id) }
+			>
+				<i class="ion-close-round"></i> { tag.Name }
+			</button>
+		}
+	</div>
+}
+
+templ PageArticle(r *http.Request, u, author *zz.UserModel, article *zz.ArticleModel, favoriteCount int64, isFollowing, isFavorited bool, comments ...CommentData) {
+	@Page(r, u) {
+		{{
+			isAuthor := u != nil && u.Id == article.AuthorId
+		}}
+		<div class="article-page">
+			<div class="banner">
+				<div class="container">
+					<h1>{ article.Title }</h1>
+					@articleMetadata(r, article, favoriteCount, author, isAuthor, isFollowing, isFavorited)
+				</div>
+			</div>
+			<div class="container page">
+				<div class="row article-content">
+					<div class="col-md-12">{ article.Body }</div>
+				</div>
+				<hr/>
+				<div class="article-actions">
+					@articleMetadata(r, article, favoriteCount, author, isAuthor, isFollowing, isFavorited)
+				</div>
+				<div class="row">
+					<div class="col-xs-12 col-md-8 offset-md-2">
+						if !isAuthor {
+							<form class="card comment-form" onSubmit="return false;">
+								<div class="card-block">
+									<textarea class="form-control" placeholder="Write a comment..." rows="3"></textarea>
+								</div>
+								<div class="card-footer">
+									<img src={ u.ImageUrl } class="comment-author-img"/>
+									<button class="btn btn-sm btn-primary">Post Comment</button>
+								</div>
+							</form>
+						}
+						for _, comment := range comments {
+							<div class="card">
+								<div class="card-block">
+									<p class="card-text">
+										{ comment.Body }
+									</p>
+								</div>
+								<div class="card-footer">
+									<a href={ SafeURL("/users/%d", comment.CommenterId) } class="comment-author">
+										<img src={ comment.CommenterImageURL } class="comment-author-img"/>
+									</a>
+									&nbsp;
+									<a href={ SafeURL("/users/%d", comment.CommenterId) } class="comment-author">
+										{ comment.CommenterUsername }
+									</a>
+									<span class="date-posted">{ comment.At.Format("Jan 2, 2006") }</span>
+									if isAuthor || comment.CommenterId == u.Id {
+										<span
+											class="mod-options"
+											data-on-click={ datastar.DELETE("/articles/%d/comments/%d", article.Id, comment.ID) }
+										>
+											<i class="ion-trash-a"></i>
+										</span>
+									}
+								</div>
+							</div>
+						}
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}
+
+templ articleMetadata(r *http.Request, article *zz.ArticleModel, favoriteCount int64, author *zz.UserModel, isAuthor, isFollowing, isFavorited bool) {
+	<div class="article-meta">
+		<a href={ SafeURL("/users/%d", article.AuthorId) }>
+			<img src={ author.ImageUrl }/>
+		</a>
+		<div class="info">
+			<a href={ SafeURL("/users/%d", article.AuthorId) } class="author">{ author.Username }</a>
+			<span class="date">{ article.CreatedAt.Format("January 2, 2006") }</span>
+		</div>
+		if !isAuthor {
+			if isFollowing {
+				<a
+					class="btn btn-sm btn-outline-danger"
+					data-on-click={ datastar.DELETE("/users/%d/follow?from=%s", author.Id, r.URL.Path) }
+				>
+					<i class="ion-minus-round"></i>
+					&nbsp; Unfollow { author.Username }
+				</a>
+				&nbsp;&nbsp;
+			} else {
+				<a
+					class="btn btn-sm btn-outline-secondary"
+					data-on-click={ datastar.POST("/users/%d/follow?from=%s", author.Id, r.URL.Path) }
+				>
+					<i class="ion-plus-round"></i>
+					&nbsp; Follow { author.Username }
+				</a>
+				&nbsp;&nbsp;
+			}
+			if isFavorited {
+				<a
+					class="btn btn-sm btn-outline-danger"
+					data-on-click={ datastar.DELETE("/articles/%d/favorite?from=%s", article.Id, r.URL.Path) }
+				>
+					<i class="ion-heart-broken"></i>
+					&nbsp; Unfavorite <span class="counter">({ fmt.Sprint(favoriteCount) })</span>
+				</a>
+			} else {
+				<a
+					class="btn btn-sm btn-outline-primary"
+					data-on-click={ datastar.POST("/articles/%d/favorite?from=%s", article.Id, r.URL.Path) }
+				>
+					<i class="ion-heart"></i>
+					&nbsp; Favorite Post <span class="counter">({ fmt.Sprint(favoriteCount) })</span>
+				</a>
+			}
+		} else {
+			<a
+				class="btn btn-sm btn-outline-secondary"
+				href={ SafeURL("/articles/%d/edit", article.Id) }
+			>
+				<i class="ion-edit"></i> Edit Article
+			</a>
+			<button
+				class="btn btn-sm btn-outline-danger"
+				data-on-click={ datastar.DELETE("/articles/%d", article.Id) }
+			>
+				<i class="ion-trash-a"></i> Delete Article
+			</button>
+		}
+	</div>
+}

@@ -23,3 +23,6 @@ go.work.sum
 
 # env file
 .env
+*_bin*
+data
+*_templ.go

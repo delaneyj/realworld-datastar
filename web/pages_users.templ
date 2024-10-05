@@ -1,0 +1,103 @@
+package web
+
+import (
+	"fmt"
+	"github.com/delaneyj/datastar"
+	"github.com/delaneyj/realworld-datastar/sql/zz"
+	"github.com/delaneyj/toolbelt"
+	"net/http"
+)
+
+templ PageUser(r *http.Request, me, u *zz.UserModel, isFollowing bool, feed *FeedData) {
+	@Page(r, me) {
+		<div class="profile-page">
+			<div class="user-info">
+				<div class="container">
+					<div class="row">
+						<div class="col-xs-12 col-md-10 offset-md-1">
+							<img src={ u.ImageUrl } class="user-img"/>
+							<h4>{ u.Username }</h4>
+							<p>
+								{ u.Bio }
+							</p>
+							if !isFollowing {
+								<button
+									class="btn btn-sm btn-outline-secondary action-btn"
+									data-on-click={ datastar.POST("/users/%d/follow?from=%s", u.Id, r.URL.Path) }
+								>
+									<i class="ion-plus-round"></i>
+									&nbsp; Follow { u.Username }
+								</button>
+							} else {
+								<button
+									class="btn btn-sm btn-outline-danger action-btn"
+									data-on-click={ datastar.DELETE("/users/%d/follow?from=%s", u.Id, r.URL.Path) }
+								>
+									<i class="ion-minus-round"></i>
+									&nbsp; Unfollow { u.Username }
+								</button>
+							}
+							if u.Id == me.Id {
+								<a
+									class="btn btn-sm btn-outline-secondary action-btn"
+									href="/settings"
+								>
+									<i class="ion-gear-a"></i>
+									&nbsp; Edit Profile Settings
+								</a>
+							}
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="container">
+				<div class="row">
+					<div class="col-xs-12 col-md-10 offset-md-1">
+						<div class="articles-toggle">
+							<ul class="nav nav-pills outline-active">
+								for _, feedName := range feed.Names {
+									<li class="nav-item">
+										<a
+											class={ "nav-link", templ.KV("active", feedName == feed.Current) }
+											href={ SafeURL(
+													"/users/%d?feed=%s&offset=%d&limit=%d",
+													u.Id,
+													feedName,
+													feed.Offset,
+													feed.Limit,
+												) }
+										>
+											{ toolbelt.Pascal( feedName) } Articles
+										</a>
+									</li>
+								}
+							</ul>
+						</div>
+						for _, preview := range feed.Articles {
+							@articlePreview(preview)
+						}
+						<ul class="pagination">
+							for i := int64(0); i < feed.TotalArticles / feed.Limit; i++ {
+								{{ onPage := i == feed.Offset/feed.Limit }}
+								<li class={ "page-item", templ.KV("active", onPage) }>
+									<a
+										class="page-link"
+										href={ SafeURL(
+											"/users/%d?feed=%s&offset=%d&limit=%d",
+											u.Id,
+											feed.Current,
+											i * feed.Limit,
+											feed.Limit,
+										) }
+									>
+										{ fmt.Sprint( i + 1 ) }
+									</a>
+								</li>
+							}
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}

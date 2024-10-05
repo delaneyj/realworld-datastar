@@ -1,0 +1,85 @@
+package web
+
+import (
+	"github.com/delaneyj/datastar"
+	"github.com/delaneyj/realworld-datastar/sql/zz"
+	"net/http"
+)
+
+templ PageSettings(r *http.Request, u *zz.UserModel) {
+	@Page(r, u) {
+		<div
+			class="settings-page"
+			data-store={ templ.JSONString(u) }
+		>
+			<div class="container page">
+				<div class="row">
+					<div class="col-md-6 offset-md-3 col-xs-12">
+						<h1 class="text-xs-center">Your Settings</h1>
+						@errorMessages()
+						<form onsubmit="return false;">
+							<fieldset>
+								<fieldset class="form-group">
+									<input
+										class="form-control"
+										type="text"
+										autoComplete="off"
+										placeholder="URL of profile picture"
+										data-model="image_url"
+									/>
+								</fieldset>
+								<fieldset class="form-group">
+									<input
+										class="form-control form-control-lg"
+										type="text"
+										autocomplete="username"
+										placeholder="Your Name"
+										data-model="username"
+									/>
+								</fieldset>
+								<fieldset class="form-group">
+									<textarea
+										class="form-control form-control-lg"
+										rows="8"
+										autocomplete="off"
+										placeholder="Short bio about you"
+										data-model="bio"
+									></textarea>
+								</fieldset>
+								<fieldset class="form-group">
+									<input
+										class="form-control form-control-lg"
+										type="text"
+										autocomplete="email"
+										placeholder="Email"
+										data-model="email"
+									/>
+								</fieldset>
+								<fieldset class="form-group">
+									<input
+										class="form-control form-control-lg"
+										type="password"
+										autocomplete="new-password"
+										placeholder="New Password"
+										data-model="password"
+									/>
+								</fieldset>
+								<button
+									class="btn btn-lg btn-primary pull-xs-right"
+									data-on-click={ datastar.POST("/settings") }
+								>
+									Update Settings
+								</button>
+							</fieldset>
+						</form>
+						<hr/>
+						<button
+							class="btn btn-outline-danger"
+							data-on-click={ datastar.POST("/auth/logout") }
+						>Or click here to logout.</button>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}

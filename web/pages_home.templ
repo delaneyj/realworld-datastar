@@ -1,0 +1,135 @@
+package web
+
+import (
+	"fmt"
+	"github.com/delaneyj/realworld-datastar/sql/zz"
+	"github.com/delaneyj/toolbelt"
+	"github.com/dustin/go-humanize"
+	"net/http"
+)
+
+templ PageHome(r *http.Request, u *zz.UserModel, feed *FeedData) {
+	@Page(r, u) {
+		<div
+			class="home-page"
+		>
+			<div class="banner">
+				<div class="container">
+					<h1 class="logo-font">conduit</h1>
+					<p>A place to share your knowledge.</p>
+				</div>
+			</div>
+			<div class="container page">
+				<div class="row">
+					<div class="col-md-9">
+						<div class="feed-toggle">
+							<ul class="nav nav-pills outline-active">
+								for _, feedName := range feed.Names {
+									<li class="nav-item">
+										<a
+											class={ "nav-link",templ.KV("active", feedName == feed.Current) }
+											href=""
+										>
+											{ toolbelt.Pascal( feedName) } Feed
+										</a>
+									</li>
+								}
+							</ul>
+						</div>
+						for _, preview := range feed.Articles {
+							@articlePreview(preview)
+						}
+						<div class="article-preview">
+							<div class="article-meta">
+								<a href="/users/eric-simons"><img src="http://i.imgur.com/Qr71crq.jpg"/></a>
+								<div class="info">
+									<a href="/users/eric-simons" class="author">Eric Simons</a>
+									<span class="date">January 20th</span>
+								</div>
+								<button class="btn btn-outline-primary btn-sm pull-xs-right">
+									<i class="ion-heart"></i> 29
+								</button>
+							</div>
+							<a href="/article/how-to-build-webapps-that-scale" class="preview-link">
+								<h1>How to build webapps that scale</h1>
+								<p>This is the description for the post.</p>
+								<span>Read more...</span>
+								<ul class="tag-list">
+									<li class="tag-default tag-pill tag-outline">realworld</li>
+									<li class="tag-default tag-pill tag-outline">implementations</li>
+								</ul>
+							</a>
+						</div>
+						<div class="article-preview">
+							<div class="article-meta">
+								<a href="/users/albert-pai"><img src="http://i.imgur.com/N4VcUeJ.jpg"/></a>
+								<div class="info">
+									<a href="/users/albert-pai" class="author">Albert Pai</a>
+									<span class="date">January 20th</span>
+								</div>
+								<button class="btn btn-outline-primary btn-sm pull-xs-right">
+									<i class="ion-heart"></i> 32
+								</button>
+							</div>
+							<a href="/article/the-song-you" class="preview-link">
+								<h1>The song you won't ever stop singing. No matter how hard you try.</h1>
+								<p>This is the description for the post.</p>
+								<span>Read more...</span>
+								<ul class="tag-list">
+									<li class="tag-default tag-pill tag-outline">realworld</li>
+									<li class="tag-default tag-pill tag-outline">implementations</li>
+								</ul>
+							</a>
+						</div>
+						<ul class="pagination">
+							<li class="page-item active">
+								<a class="page-link" href="">1</a>
+							</li>
+							<li class="page-item">
+								<a class="page-link" href="">2</a>
+							</li>
+						</ul>
+					</div>
+					<div class="col-md-3">
+						<div class="sidebar">
+							<p>Popular Tags</p>
+							<div class="tag-list">
+								for _, tag := range feed.PopularTags {
+									<a href="" class="tag-pill tag-default">{ tag }</a>
+								}
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}
+
+templ articlePreview(preview *ArticlePreview) {
+	<div class="article-preview">
+		{{ authorHref := SafeURL("/users/%d", preview.AuthorID) }}
+		<div class="article-meta">
+			<a href={ authorHref }>
+				<img src={ preview.ImageUrl }/>
+			</a>
+			<div class="info">
+				<a href={ authorHref } class="author">{ preview.Username }</a>
+				<span class="date">{ humanize.Time( preview.CreatedAt) }</span>
+			</div>
+			<button class="btn btn-outline-primary btn-sm pull-xs-right">
+				<i class="ion-heart"></i> { fmt.Sprint(preview.FavoriteCount) }
+			</button>
+		</div>
+		<a href={ SafeURL("/articles/%d", preview.ArticleId) } class="preview-link">
+			<h1>{ preview.Title }</h1>
+			<p>{ preview.Description }</p>
+			<span>Read more...</span>
+			<ul class="tag-list">
+				for _, tag := range preview.Tags {
+					<li class="tag-default tag-pill tag-outline">{ tag.Name }</li>
+				}
+			</ul>
+		</a>
+	</div>
+}

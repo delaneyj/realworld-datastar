@@ -1,0 +1,95 @@
+package web
+
+import (
+	"github.com/delaneyj/datastar"
+	"github.com/delaneyj/realworld-datastar/sql/zz"
+	"net/http"
+)
+
+templ PageAuthenticationLogin(r *http.Request, u *zz.UserModel) {
+	@Page(r, u) {
+		<div
+			class="auth-page"
+			data-store="{email:'',password:''}"
+		>
+			<div class="container page">
+				<div class="row">
+					<div class="col-md-6 offset-md-3 col-xs-12">
+						<h1 class="text-xs-center">Sign in</h1>
+						<p class="text-xs-center">
+							<a href="/auth/register">Need an account?</a>
+						</p>
+						@errorMessages()
+						<form onsubmit="return false;">
+							<fieldset class="form-group">
+								<input
+									id="email"
+									autocomplete="email"
+									class="form-control form-control-lg"
+									type="text"
+									placeholder="Email"
+									data-model="email"
+								/>
+							</fieldset>
+							<fieldset class="form-group">
+								<input
+									id="password"
+									autocomplete="current-password"
+									class="form-control form-control-lg"
+									type="password"
+									placeholder="Password"
+									data-model="password"
+								/>
+							</fieldset>
+							<button
+								class="btn btn-lg btn-primary pull-xs-right"
+								data-on-click={ datastar.POST("/auth/login") }
+							>
+								Sign in
+							</button>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}
+
+templ errorMessages(errs ...error) {
+	<div id="errorMessages">
+		<ul class="error-messages">
+			for _,err :=range errs {
+				<li>{ err.Error() }</li>
+			}
+		</ul>
+	</div>
+}
+
+templ PageAuthenticationRegister(r *http.Request, u *zz.UserModel) {
+	@Page(r, u) {
+		<div class="auth-page">
+			<div class="container page">
+				<div class="row">
+					<div class="col-md-6 offset-md-3 col-xs-12">
+						<h1 class="text-xs-center">Sign in</h1>
+						<p class="text-xs-center">
+							<a href="/register">Need an account?</a>
+						</p>
+						<ul class="error-messages">
+							<li>That email is already taken</li>
+						</ul>
+						<form>
+							<fieldset class="form-group">
+								<input class="form-control form-control-lg" type="text" placeholder="Email"/>
+							</fieldset>
+							<fieldset class="form-group">
+								<input class="form-control form-control-lg" type="password" placeholder="Password"/>
+							</fieldset>
+							<button class="btn btn-lg btn-primary pull-xs-right">Sign in</button>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}
