@@ -26,3 +26,4 @@ go.work.sum
 *_bin*
 data
 *_templ.go
+.task

@@ -3,6 +3,7 @@ package web
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/delaneyj/realworld-datastar/sql/zz"
@@ -37,40 +38,106 @@ func setupHomeRoutes(r chi.Router, db *toolbelt.Database) {
 		ctx := r.Context()
 		u, _ := UserFromContext(ctx)
 
-		feed := &FeedData{
-			Names:   []string{"your", "global"},
-			Current: "global",
-			Limit:   10,
-			Offset:  0,
+		feedData := &FeedData{
+			Names:  []string{"your", "global"},
+			Limit:  3,
+			Offset: 0,
 		}
 
-		if u != nil {
-			if err := db.ReadTX(ctx, func(tx *sqlite.Conn) error {
-				res, err := zz.OnceYourFeedArticlePreviews(tx, zz.YourFeedArticlePreviewsParams{
-					UserId: u.Id,
-					Offset: int64(feed.Offset),
-					Limit:  int64(feed.Limit),
-				})
-				if err != nil {
-					return fmt.Errorf("failed to get your feed: %w", err)
-				}
+		feed := r.URL.Query().Get("feed")
+		if feed == "" {
+			feed = "your"
+		}
 
-				for _, row := range res {
-					preview := &ArticlePreview{
-						ArticleId:   row.ArticleId,
-						AuthorID:    row.AuthorId,
-						Username:    row.Username,
-						ImageUrl:    row.ImageUrl,
-						Title:       row.Title,
-						Description: row.Description,
+		isValidFeedName := false
+		for _, name := range feedData.Names {
+			if feed == name {
+				isValidFeedName = true
+				break
+			}
+		}
+		if !isValidFeedName {
+			http.Error(w, "invalid feed name", http.StatusBadRequest)
+			return
+		}
+		feedData.Current = feed
+
+		offsetRaw := r.URL.Query().Get("offset")
+		if offsetRaw == "" {
+			offsetRaw = "0"
+		}
+		offset, err := strconv.ParseInt(offsetRaw, 10, 64)
+		if err != nil {
+			http.Error(w, "invalid offset", http.StatusBadRequest)
+			return
+		}
+		feedData.Offset = offset
+
+		if u != nil {
+			if err := db.ReadTX(ctx, func(tx *sqlite.Conn) (err error) {
+
+				switch feedData.Current {
+				case "your":
+					res, err := zz.OnceYourFeedArticlePreviews(tx, zz.YourFeedArticlePreviewsParams{
+						UserId: u.Id,
+						Offset: feedData.Offset,
+						Limit:  feedData.Limit,
+					})
+					if err != nil {
+						return fmt.Errorf("failed to get your feed: %w", err)
 					}
 
-					preview.FavoriteCount, err = zz.OnceArticleFavoriteCount(tx, row.ArticleId)
+					for _, row := range res {
+						preview := &ArticlePreview{
+							ArticleId:   row.ArticleId,
+							AuthorID:    row.AuthorId,
+							Username:    row.Username,
+							ImageUrl:    row.ImageUrl,
+							Title:       row.Title,
+							Description: row.Description,
+						}
+						feedData.Articles = append(feedData.Articles, preview)
+					}
+
+					feedData.TotalArticles, err = zz.OnceYourFeedArticleCount(tx, u.Id)
+					if err != nil {
+						return fmt.Errorf("failed to get your feed count: %w", err)
+					}
+
+				case "global":
+					res, err := zz.OnceGlobalFeedArticlePreviews(tx, zz.GlobalFeedArticlePreviewsParams{
+						Offset: feedData.Offset,
+						Limit:  feedData.Limit,
+					})
+					if err != nil {
+						return fmt.Errorf("failed to get global feed: %w", err)
+					}
+
+					for _, row := range res {
+						preview := &ArticlePreview{
+							ArticleId:   row.ArticleId,
+							AuthorID:    row.AuthorId,
+							Username:    row.Username,
+							ImageUrl:    row.ImageUrl,
+							Title:       row.Title,
+							Description: row.Description,
+						}
+						feedData.Articles = append(feedData.Articles, preview)
+					}
+
+					feedData.TotalArticles, err = zz.OnceGlobalFeedArticleCount(tx)
+					if err != nil {
+						return fmt.Errorf("failed to get global feed count: %w", err)
+					}
+				}
+
+				for _, preview := range feedData.Articles {
+					preview.FavoriteCount, err = zz.OnceArticleFavoriteCount(tx, preview.ArticleId)
 					if err != nil {
 						return fmt.Errorf("failed to get favorite count: %w", err)
 					}
 
-					res, err := zz.OnceTagsForArticle(tx, row.ArticleId)
+					res, err := zz.OnceTagsForArticle(tx, preview.ArticleId)
 					if err != nil {
 						return fmt.Errorf("failed to get tags for article: %w", err)
 					}
@@ -80,7 +147,6 @@ func setupHomeRoutes(r chi.Router, db *toolbelt.Database) {
 							Name: row.Name,
 						})
 					}
-					feed.Articles = append(feed.Articles, preview)
 				}
 
 				topTagRes, err := zz.OnceTopTags(tx, 10)
@@ -88,7 +154,7 @@ func setupHomeRoutes(r chi.Router, db *toolbelt.Database) {
 					return fmt.Errorf("failed to get top tags: %w", err)
 				}
 				for _, row := range topTagRes {
-					feed.PopularTags = append(feed.PopularTags, row.Name)
+					feedData.PopularTags = append(feedData.PopularTags, row.Name)
 				}
 
 				return nil
@@ -98,6 +164,6 @@ func setupHomeRoutes(r chi.Router, db *toolbelt.Database) {
 			}
 		}
 
-		PageHome(r, u, feed).Render(r.Context(), w)
+		PageHome(r, u, feedData).Render(r.Context(), w)
 	})
 }

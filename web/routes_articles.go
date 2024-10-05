@@ -528,6 +528,8 @@ func setupArticlesRoutes(r chi.Router, db *toolbelt.Database) {
 							fmt.Errorf("failed to delete tag %w", err),
 						))
 					}
+
+					datastar.Redirect(sse, fmt.Sprintf("/articles/%d/edit", articleID))
 				})
 			})
 

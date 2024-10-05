@@ -76,28 +76,38 @@ templ PageUser(r *http.Request, me, u *zz.UserModel, isFollowing bool, feed *Fee
 						for _, preview := range feed.Articles {
 							@articlePreview(preview)
 						}
-						<ul class="pagination">
-							for i := int64(0); i < feed.TotalArticles / feed.Limit; i++ {
-								{{ onPage := i == feed.Offset/feed.Limit }}
-								<li class={ "page-item", templ.KV("active", onPage) }>
-									<a
-										class="page-link"
-										href={ SafeURL(
-											"/users/%d?feed=%s&offset=%d&limit=%d",
-											u.Id,
-											feed.Current,
-											i * feed.Limit,
-											feed.Limit,
-										) }
-									>
-										{ fmt.Sprint( i + 1 ) }
-									</a>
-								</li>
-							}
-						</ul>
+						@articlePagination(
+							feed.TotalArticles,
+							feed.Offset,
+							feed.Limit,
+							feed.Current,
+							fmt.Sprintf("/users/%d", u.Id),
+						)
 					</div>
 				</div>
 			</div>
 		</div>
 	}
+}
+
+templ articlePagination(totalArticles, offset, limit int64, feed, urlPrefix string) {
+	<ul class="pagination">
+		for i := int64(0); i < totalArticles / limit; i++ {
+			{{ onPage := i == offset/limit }}
+			<li class={ "page-item", templ.KV("active", onPage) }>
+				<a
+					class="page-link"
+					href={ SafeURL(
+											"%s?feed=%s&offset=%d&limit=%d",
+											urlPrefix,
+											feed,
+											i * limit,
+											limit,
+										) }
+				>
+					{ fmt.Sprint( i + 1 ) }
+				</a>
+			</li>
+		}
+	</ul>
 }

@@ -40,6 +40,38 @@ ORDER BY
 LIMIT
     @limit OFFSET @offset;
 
+-- name: YourFeedArticleCount :one
+SELECT
+    count(*)
+FROM
+    following f
+    INNER JOIN articles a ON a.author_id = f.follows_id
+WHERE
+    user_id = @userID;
+
+-- name: GlobalFeedArticlePreviews :many
+SELECT
+    a.id AS article_id,
+    u.id AS author_id,
+    u.username,
+    u.image_url,
+    a.title,
+    a.description
+FROM
+    articles a
+    INNER JOIN users u ON u.id = a.author_id
+ORDER BY
+    a.updated_at DESC,
+    a.id DESC
+LIMIT
+    @limit OFFSET @offset;
+
+-- name: GlobalFeedArticleCount :one
+SELECT
+    count(*)
+FROM
+    articles;
+
 -- name: ArticlePreviewsByAuthor :many
 SELECT
     a.id AS article_id,
