@@ -58,6 +58,11 @@ tasks:
       - go build -o ./{{.BIN_NAME}} cmd/{{.NAME}}/main.go
       - ./{{.BIN_NAME}}
 
+  upx:
+    cmds:
+      - go build -ldflags="-s" -o ./{{.BIN_NAME}} cmd/{{.NAME}}/main.go
+      - upx -9 -k ./{{.BIN_NAME}}
+
   default:
     deps:
       - hot
