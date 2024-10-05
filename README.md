@@ -16,3 +16,5 @@ The database is seeded if empty
 
 Email: `admin@example.com`
 Password: `correctHorseBatteryStapler`
+
+Every other seeded user has thei password set to their user id.

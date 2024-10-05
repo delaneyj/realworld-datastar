@@ -17,6 +17,7 @@ import (
 	"github.com/delaneyj/realworld-datastar/sql/zz"
 	"github.com/delaneyj/toolbelt"
 	"github.com/jaswdr/faker/v2"
+	"golang.org/x/crypto/bcrypt"
 	"zombiezen.com/go/sqlite"
 )
 
@@ -97,26 +98,37 @@ func SeedDBIfEmpty(ctx context.Context, db *toolbelt.Database) error {
 		createUserStmt := zz.CreateUser(tx)
 		userIds[0] = 1
 
+		passwordHash, err := bcrypt.GenerateFromPassword([]byte("correctHorseBatteryStapler"), bcrypt.DefaultCost)
+		if err != nil {
+			return fmt.Errorf("failed to hash password: %w", err)
+		}
+
 		if err := createUserStmt.Run(&zz.UserModel{
-			Id:       1,
-			Username: "admin",
-			Email:    "admin@example.com",
-			Password: "correctHorseBatteryStapler",
-			Bio:      "Admin user",
-			ImageUrl: "https://i.pravatar.cc/150?u=1",
+			Id:           1,
+			Username:     "admin",
+			Email:        "admin@example.com",
+			PasswordHash: passwordHash,
+			Bio:          "Admin user",
+			ImageUrl:     "https://i.pravatar.cc/150?u=1",
 		}); err != nil {
 			return fmt.Errorf("failed to create admin user: %w", err)
 		}
 
 		for i := 1; i < len(userIds); i++ {
 			userID := toolbelt.NextID()
+			password := fmt.Sprintf("%d", userID)
+			passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+			if err != nil {
+				return fmt.Errorf("failed to hash password: %w", err)
+			}
+
 			if err := createUserStmt.Run(&zz.UserModel{
-				Id:       userID,
-				Username: fmt.Sprintf("%s%04d", fake.Internet().User(), i),
-				Email:    fake.Internet().Email(),
-				Bio:      fake.Lorem().Sentences(1)[0],
-				ImageUrl: fmt.Sprintf("https://i.pravatar.cc/150?u=%d", userID),
-				Password: fmt.Sprintf("%d", userID),
+				Id:           userID,
+				Username:     fmt.Sprintf("%s%04d", fake.Internet().User(), i),
+				Email:        fake.Internet().Email(),
+				Bio:          fake.Lorem().Sentences(1)[0],
+				ImageUrl:     fmt.Sprintf("https://i.pravatar.cc/150?u=%d", userID),
+				PasswordHash: passwordHash,
 			}); err != nil {
 				return fmt.Errorf("failed to create user: %w", err)
 			}

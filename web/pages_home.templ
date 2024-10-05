@@ -36,16 +36,22 @@ templ PageHome(r *http.Request, u *zz.UserModel, feed *FeedData) {
 								}
 							</ul>
 						</div>
-						for _, preview := range feed.Articles {
-							@articlePreview(preview)
+						if len(feed.Articles) == 0 {
+							<div class="article-preview">
+								<p>No articles are here... go favorite some authors!</p>
+							</div>
+						} else {
+							for _, preview := range feed.Articles {
+								@articlePreview(preview)
+							}
+							@articlePagination(
+								feed.TotalArticles,
+								feed.Offset,
+								feed.Limit,
+								feed.Current,
+								"/",
+							)
 						}
-						@articlePagination(
-							feed.TotalArticles,
-							feed.Offset,
-							feed.Limit,
-							feed.Current,
-							"/",
-						)
 					</div>
 					<div class="col-md-3">
 						<div id="popularTags" class="sidebar">

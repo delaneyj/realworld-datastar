@@ -55,37 +55,60 @@ templ PageAuthenticationLogin(r *http.Request, u *zz.UserModel) {
 	}
 }
 
-templ errorMessages(errs ...error) {
-	<div id="errorMessages">
-		<ul class="error-messages">
-			for _,err :=range errs {
-				<li>{ err.Error() }</li>
-			}
-		</ul>
-	</div>
+type RegisterForm struct {
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
-templ PageAuthenticationRegister(r *http.Request, u *zz.UserModel) {
+templ PageAuthenticationRegister(r *http.Request, u *zz.UserModel, form *RegisterForm) {
 	@Page(r, u) {
-		<div class="auth-page">
+		<div
+			class="auth-page"
+			data-store={ templ.JSONString(form) }
+		>
 			<div class="container page">
 				<div class="row">
 					<div class="col-md-6 offset-md-3 col-xs-12">
-						<h1 class="text-xs-center">Sign in</h1>
+						<h1 class="text-xs-center">Sign up</h1>
 						<p class="text-xs-center">
-							<a href="/register">Need an account?</a>
+							<a href="/auth/login">Have an account?</a>
 						</p>
-						<ul class="error-messages">
-							<li>That email is already taken</li>
-						</ul>
-						<form>
+						@errorMessages()
+						<form onsubmit="return false;">
 							<fieldset class="form-group">
-								<input class="form-control form-control-lg" type="text" placeholder="Email"/>
+								<input
+									class="form-control form-control-lg"
+									type="text"
+									autocomplete="off"
+									placeholder="Username"
+									data-model="username"
+								/>
 							</fieldset>
 							<fieldset class="form-group">
-								<input class="form-control form-control-lg" type="password" placeholder="Password"/>
+								<input
+									class="form-control form-control-lg"
+									type="text"
+									autocomplete="off"
+									placeholder="Email"
+									data-model="email"
+								/>
 							</fieldset>
-							<button class="btn btn-lg btn-primary pull-xs-right">Sign in</button>
+							<fieldset class="form-group">
+								<input
+									class="form-control form-control-lg"
+									type="password"
+									autocomplete="off"
+									placeholder="Password"
+									data-model="password"
+								/>
+							</fieldset>
+							<button
+								class="btn btn-lg btn-primary pull-xs-right"
+								data-on-click={ datastar.POST("/auth/register") }
+							>
+								Sign up
+							</button>
 						</form>
 					</div>
 				</div>

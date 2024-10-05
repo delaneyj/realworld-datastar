@@ -39,10 +39,13 @@ func setupHomeRoutes(r chi.Router, db *toolbelt.Database) {
 		u, _ := UserFromContext(ctx)
 
 		feedData := &FeedData{
-			Names:  []string{"your", "global"},
 			Limit:  3,
 			Offset: 0,
 		}
+		if u != nil {
+			feedData.Names = append(feedData.Names, "your")
+		}
+		feedData.Names = append(feedData.Names, "global")
 
 		feed := r.URL.Query().Get("feed")
 		if feed == "" {
@@ -73,95 +76,93 @@ func setupHomeRoutes(r chi.Router, db *toolbelt.Database) {
 		}
 		feedData.Offset = offset
 
-		if u != nil {
-			if err := db.ReadTX(ctx, func(tx *sqlite.Conn) (err error) {
+		if err := db.ReadTX(ctx, func(tx *sqlite.Conn) (err error) {
 
-				switch feedData.Current {
-				case "your":
-					res, err := zz.OnceYourFeedArticlePreviews(tx, zz.YourFeedArticlePreviewsParams{
-						UserId: u.Id,
-						Offset: feedData.Offset,
-						Limit:  feedData.Limit,
-					})
-					if err != nil {
-						return fmt.Errorf("failed to get your feed: %w", err)
-					}
-
-					for _, row := range res {
-						preview := &ArticlePreview{
-							ArticleId:   row.ArticleId,
-							AuthorID:    row.AuthorId,
-							Username:    row.Username,
-							ImageUrl:    row.ImageUrl,
-							Title:       row.Title,
-							Description: row.Description,
-						}
-						feedData.Articles = append(feedData.Articles, preview)
-					}
-
-					feedData.TotalArticles, err = zz.OnceYourFeedArticleCount(tx, u.Id)
-					if err != nil {
-						return fmt.Errorf("failed to get your feed count: %w", err)
-					}
-
-				case "global":
-					res, err := zz.OnceGlobalFeedArticlePreviews(tx, zz.GlobalFeedArticlePreviewsParams{
-						Offset: feedData.Offset,
-						Limit:  feedData.Limit,
-					})
-					if err != nil {
-						return fmt.Errorf("failed to get global feed: %w", err)
-					}
-
-					for _, row := range res {
-						preview := &ArticlePreview{
-							ArticleId:   row.ArticleId,
-							AuthorID:    row.AuthorId,
-							Username:    row.Username,
-							ImageUrl:    row.ImageUrl,
-							Title:       row.Title,
-							Description: row.Description,
-						}
-						feedData.Articles = append(feedData.Articles, preview)
-					}
-
-					feedData.TotalArticles, err = zz.OnceGlobalFeedArticleCount(tx)
-					if err != nil {
-						return fmt.Errorf("failed to get global feed count: %w", err)
-					}
-				}
-
-				for _, preview := range feedData.Articles {
-					preview.FavoriteCount, err = zz.OnceArticleFavoriteCount(tx, preview.ArticleId)
-					if err != nil {
-						return fmt.Errorf("failed to get favorite count: %w", err)
-					}
-
-					res, err := zz.OnceTagsForArticle(tx, preview.ArticleId)
-					if err != nil {
-						return fmt.Errorf("failed to get tags for article: %w", err)
-					}
-					for _, row := range res {
-						preview.Tags = append(preview.Tags, &zz.TagModel{
-							Id:   row.Id,
-							Name: row.Name,
-						})
-					}
-				}
-
-				topTagRes, err := zz.OnceTopTags(tx, 10)
+			switch feedData.Current {
+			case "your":
+				res, err := zz.OnceYourFeedArticlePreviews(tx, zz.YourFeedArticlePreviewsParams{
+					UserId: u.Id,
+					Offset: feedData.Offset,
+					Limit:  feedData.Limit,
+				})
 				if err != nil {
-					return fmt.Errorf("failed to get top tags: %w", err)
-				}
-				for _, row := range topTagRes {
-					feedData.PopularTags = append(feedData.PopularTags, row.Name)
+					return fmt.Errorf("failed to get your feed: %w", err)
 				}
 
-				return nil
-			}); err != nil {
-				http.Error(w, "failed to read from database", http.StatusInternalServerError)
-				return
+				for _, row := range res {
+					preview := &ArticlePreview{
+						ArticleId:   row.ArticleId,
+						AuthorID:    row.AuthorId,
+						Username:    row.Username,
+						ImageUrl:    row.ImageUrl,
+						Title:       row.Title,
+						Description: row.Description,
+					}
+					feedData.Articles = append(feedData.Articles, preview)
+				}
+
+				feedData.TotalArticles, err = zz.OnceYourFeedArticleCount(tx, u.Id)
+				if err != nil {
+					return fmt.Errorf("failed to get your feed count: %w", err)
+				}
+
+			case "global":
+				res, err := zz.OnceGlobalFeedArticlePreviews(tx, zz.GlobalFeedArticlePreviewsParams{
+					Offset: feedData.Offset,
+					Limit:  feedData.Limit,
+				})
+				if err != nil {
+					return fmt.Errorf("failed to get global feed: %w", err)
+				}
+
+				for _, row := range res {
+					preview := &ArticlePreview{
+						ArticleId:   row.ArticleId,
+						AuthorID:    row.AuthorId,
+						Username:    row.Username,
+						ImageUrl:    row.ImageUrl,
+						Title:       row.Title,
+						Description: row.Description,
+					}
+					feedData.Articles = append(feedData.Articles, preview)
+				}
+
+				feedData.TotalArticles, err = zz.OnceGlobalFeedArticleCount(tx)
+				if err != nil {
+					return fmt.Errorf("failed to get global feed count: %w", err)
+				}
 			}
+
+			for _, preview := range feedData.Articles {
+				preview.FavoriteCount, err = zz.OnceArticleFavoriteCount(tx, preview.ArticleId)
+				if err != nil {
+					return fmt.Errorf("failed to get favorite count: %w", err)
+				}
+
+				res, err := zz.OnceTagsForArticle(tx, preview.ArticleId)
+				if err != nil {
+					return fmt.Errorf("failed to get tags for article: %w", err)
+				}
+				for _, row := range res {
+					preview.Tags = append(preview.Tags, &zz.TagModel{
+						Id:   row.Id,
+						Name: row.Name,
+					})
+				}
+			}
+
+			topTagRes, err := zz.OnceTopTags(tx, 10)
+			if err != nil {
+				return fmt.Errorf("failed to get top tags: %w", err)
+			}
+			for _, row := range topTagRes {
+				feedData.PopularTags = append(feedData.PopularTags, row.Name)
+			}
+
+			return nil
+		}); err != nil {
+			http.Error(w, "failed to read from database", http.StatusInternalServerError)
+			return
 		}
 
 		PageHome(r, u, feedData).Render(r.Context(), w)

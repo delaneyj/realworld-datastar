@@ -6,6 +6,14 @@ FROM
 WHERE
     email = @email;
 
+-- name: UserByUsername :one
+SELECT
+    *
+FROM
+    users
+WHERE
+    username = @username;
+
 -- name: TopTags :many
 SELECT
     t.name,

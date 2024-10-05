@@ -10,6 +10,7 @@ require (
 	github.com/go-chi/chi/v5 v5.1.0
 	github.com/gorilla/sessions v1.4.0
 	github.com/jaswdr/faker/v2 v2.3.0
+	golang.org/x/crypto v0.27.0
 	zombiezen.com/go/sqlite v1.4.0
 )
 

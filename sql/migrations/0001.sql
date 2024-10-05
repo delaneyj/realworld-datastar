@@ -2,7 +2,7 @@ CREATE TABLE users (
     id INTEGER PRIMARY KEY,
     username TEXT NOT NULL UNIQUE,
     email TEXT NOT NULL UNIQUE,
-    PASSWORD TEXT NOT NULL,
+    password_hash BLOB NOT NULL,
     bio TEXT NOT NULL,
     image_url TEXT NOT NULL
 );

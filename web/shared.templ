@@ -7,24 +7,14 @@ import (
 	"strings"
 )
 
-templ head() {
-	<head>
-		<meta charset="utf-8"/>
-		<title>Conduit</title>
-		<link
-			href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css"
-			rel="stylesheet"
-			type="text/css"
-		/>
-		<link
-			href="https://fonts.googleapis.com/css?family=Titillium+Web:700|Source+Serif+Pro:400,700|Merriweather+Sans:400,700|Source+Sans+Pro:400,300,600,700,300italic,400italic,600italic,700italic"
-			rel="stylesheet"
-			type="text/css"
-		/>
-		<link rel="stylesheet" href="https://demo.productionready.io/main.css"/>
-		<script type="module" defer src="https://cdn.jsdelivr.net/npm/@sudodevnull/datastar@0.18.9/+esm"></script>
-		<style>@view-transition {navigation: auto;}</style>
-	</head>
+templ errorMessages(errs ...error) {
+	<div id="errorMessages">
+		<ul class="error-messages">
+			for _,err :=range errs {
+				<li>{ err.Error() }</li>
+			}
+		</ul>
+	</div>
 }
 
 templ header(r *http.Request, user *zz.UserModel) {
@@ -92,4 +82,24 @@ templ Page(r *http.Request, u *zz.UserModel) {
 			@footer()
 		</body>
 	</html>
+}
+
+templ head() {
+	<head>
+		<meta charset="utf-8"/>
+		<title>Conduit</title>
+		<link
+			href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css"
+			rel="stylesheet"
+			type="text/css"
+		/>
+		<link
+			href="https://fonts.googleapis.com/css?family=Titillium+Web:700|Source+Serif+Pro:400,700|Merriweather+Sans:400,700|Source+Sans+Pro:400,300,600,700,300italic,400italic,600italic,700italic"
+			rel="stylesheet"
+			type="text/css"
+		/>
+		<link rel="stylesheet" href="https://demo.productionready.io/main.css"/>
+		<script type="module" defer src="https://cdn.jsdelivr.net/npm/@sudodevnull/datastar@0.18.9/+esm"></script>
+		<style>@view-transition {navigation: auto;}</style>
+	</head>
 }
