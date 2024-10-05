@@ -9,3 +9,10 @@ go install github.com/go-task/task/v3/cmd/task@latest
 task tools
 task -w
 ```
+
+# Usage
+
+The database is seeded if empty
+
+Email: `admin@example.com`
+Password: `correctHorseBatteryStapler`
