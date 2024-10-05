@@ -2,7 +2,6 @@ package web
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -97,7 +96,6 @@ func setupUsersRoutes(r chi.Router, db *toolbelt.Database) {
 					if err != nil {
 						return fmt.Errorf("failed to get articles by author: %w", err)
 					}
-					log.Printf("res: %v", res)
 
 					for _, row := range res {
 						preview := &ArticlePreview{
