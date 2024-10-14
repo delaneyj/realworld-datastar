@@ -6,11 +6,11 @@ import (
 	"net/http"
 )
 
-templ PageSettings(r *http.Request, u *zz.UserModel) {
+templ PageSettings(r *http.Request, u *zz.UserModel, settings SettingsForm) {
 	@Page(r, u) {
 		<div
 			class="settings-page"
-			data-store={ templ.JSONString(u) }
+			data-store={ templ.JSONString(settings) }
 		>
 			<div class="container page">
 				<div class="row">
@@ -25,7 +25,7 @@ templ PageSettings(r *http.Request, u *zz.UserModel) {
 										type="text"
 										autoComplete="off"
 										placeholder="URL of profile picture"
-										data-model="image_url"
+										data-model="imageURL"
 									/>
 								</fieldset>
 								<fieldset class="form-group">

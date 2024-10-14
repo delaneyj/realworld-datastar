@@ -17,7 +17,7 @@ import (
 type SettingsForm struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
-	ImageUrl string `json:"image"`
+	ImageUrl string `json:"imageURL"`
 	Bio      string `json:"bio"`
 	Password string `json:"password"`
 }
@@ -27,7 +27,14 @@ func setupSettingsRoutes(r chi.Router, db *toolbelt.Database) {
 		settingsRouter.Get("/", func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			u, _ := UserFromContext(ctx)
-			PageSettings(r, u).Render(ctx, w)
+			settings := SettingsForm{
+				Username: u.Username,
+				Email:    u.Email,
+				ImageUrl: u.ImageUrl,
+				Bio:      u.Bio,
+				Password: "",
+			}
+			PageSettings(r, u, settings).Render(ctx, w)
 		})
 
 		settingsRouter.Post("/", func(w http.ResponseWriter, r *http.Request) {
