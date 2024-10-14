@@ -49,7 +49,11 @@ func setupHomeRoutes(r chi.Router, db *toolbelt.Database) {
 
 		feed := r.URL.Query().Get("feed")
 		if feed == "" {
-			feed = "your"
+			if u != nil {
+				feed = "your"
+			} else {
+				feed = "global"
+			}
 		}
 
 		isValidFeedName := false
@@ -60,7 +64,7 @@ func setupHomeRoutes(r chi.Router, db *toolbelt.Database) {
 			}
 		}
 		if !isValidFeedName {
-			http.Error(w, "invalid feed name", http.StatusBadRequest)
+			http.Error(w, fmt.Sprintf("invalid feed name: %s", feed), http.StatusBadRequest)
 			return
 		}
 		feedData.Current = feed
